@@ -90,7 +90,6 @@ typedef struct auth_chain_b_data {
     int data_size_list2_length;
 } auth_chain_b_data;
 
-struct auth_chain_local_data;
 typedef struct auth_chain_local_data {
     int has_sent_header;
     char *recv_buffer;
@@ -112,7 +111,7 @@ typedef struct auth_chain_local_data {
     enc_ctx_t *cipher_server_ctx;
 
     unsigned int (*get_tcp_rand_len)(
-            void *auth_chain_local_data_ptr,   // auth_chain_local_data *local
+            struct auth_chain_local_data *local,
             server_info *server,
             int datalength,
             shift128plus_ctx *random,
@@ -138,7 +137,7 @@ void auth_chain_local_data_init(auth_chain_local_data *local) {
 }
 
 unsigned int auth_chain_a_get_rand_len(
-        void *auth_chain_local_data_ptr,
+        auth_chain_local_data *local,
         server_info *server,
         int datalength,
         shift128plus_ctx *random,
@@ -157,7 +156,7 @@ unsigned int auth_chain_a_get_rand_len(
 }
 
 unsigned int auth_chain_b_get_rand_len(
-        void *auth_chain_local_data_ptr,
+        auth_chain_local_data *local,
         server_info *server,
         int datalength,
         shift128plus_ctx *random,
@@ -166,10 +165,9 @@ unsigned int auth_chain_b_get_rand_len(
     if (datalength > 1440)
         return 0;
     uint16_t overhead = server->overhead;
-    auth_chain_b_data *special_data = (auth_chain_b_data *)
-            ((auth_chain_local_data *) auth_chain_local_data_ptr)->auth_chain_special_data;
+    auth_chain_b_data *special_data = (auth_chain_b_data *) local->auth_chain_special_data;
 
-    // TODO auth_chain_b_get_rand_len
+    // auth_chain_b_get_rand_len
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     int pos = find_pos(special_data->data_size_list, special_data->data_size_list_length, datalength + overhead);
     int final_pos = pos + shift128plus_next(random) % special_data->data_size_list_length;
