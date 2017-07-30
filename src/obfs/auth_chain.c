@@ -84,12 +84,13 @@ typedef struct auth_chain_global_data {
 } auth_chain_global_data;
 
 typedef struct auth_chain_b_data {
-    int data_size_list[];
+    int *data_size_list;
     int data_size_list_length;
-    int data_size_list2[];
+    int *data_size_list2;
     int data_size_list2_length;
 } auth_chain_b_data;
 
+struct auth_chain_local_data;
 typedef struct auth_chain_local_data {
     int has_sent_header;
     char *recv_buffer;
@@ -111,7 +112,7 @@ typedef struct auth_chain_local_data {
     enc_ctx_t *cipher_server_ctx;
 
     unsigned int (*get_tcp_rand_len)(
-            auth_chain_local_data *local,
+            void *auth_chain_local_data_ptr,   // auth_chain_local_data *local
             server_info *server,
             int datalength,
             shift128plus_ctx *random,
@@ -137,7 +138,7 @@ void auth_chain_local_data_init(auth_chain_local_data *local) {
 }
 
 unsigned int auth_chain_a_get_rand_len(
-        auth_chain_local_data *local,
+        void *auth_chain_local_data_ptr,
         server_info *server,
         int datalength,
         shift128plus_ctx *random,
@@ -156,7 +157,7 @@ unsigned int auth_chain_a_get_rand_len(
 }
 
 unsigned int auth_chain_b_get_rand_len(
-        auth_chain_local_data *local,
+        void *auth_chain_local_data_ptr,
         server_info *server,
         int datalength,
         shift128plus_ctx *random,
@@ -165,7 +166,8 @@ unsigned int auth_chain_b_get_rand_len(
     if (datalength > 1440)
         return 0;
     uint16_t overhead = server->overhead;
-    auth_chain_b_data *special_data = (auth_chain_b_data *) local->auth_chain_special_data;
+    auth_chain_b_data *special_data = (auth_chain_b_data *)
+            ((auth_chain_local_data *) auth_chain_local_data_ptr)->auth_chain_special_data;
 
     // TODO auth_chain_b_get_rand_len
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
@@ -178,7 +180,7 @@ unsigned int auth_chain_b_get_rand_len(
     int pos2 = find_pos(special_data->data_size_list2, special_data->data_size_list2_length, datalength + overhead);
     int final_pos2 = pos2 + shift128plus_next(random) % special_data->data_size_list2_length;
     if (final_pos2 < special_data->data_size_list2_length) {
-        return data_size_list2[final_pos2] - datalength - overhead;
+        return special_data->data_size_list2[final_pos2] - datalength - overhead;
     }
     if (final_pos2 < pos2 + special_data->data_size_list2_length - 1) {
         return 0;
@@ -340,18 +342,16 @@ unsigned int get_rand_start_pos(int rand_len, shift128plus_ctx *random) {
 }
 
 unsigned int get_client_rand_len(auth_chain_local_data *local, server_info *server, int datalength) {
-    return ((auth_chain_local_data *) self->l_data)->
-            get_tcp_rand_len(local, server, datalength, &local->random_client, local->last_client_hash);
+    return local->get_tcp_rand_len(local, server, datalength, &local->random_client, local->last_client_hash);
 }
 
 unsigned int get_server_rand_len(auth_chain_local_data *local, server_info *server, int datalength) {
-    return ((auth_chain_local_data *) self->l_data)->
-            get_tcp_rand_len(local, server, datalength, &local->random_server, local->last_server_hash);
+    return local->get_tcp_rand_len(local, server, datalength, &local->random_server, local->last_server_hash);
 }
 
 int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain_local_data *local,
                            server_info *server) {
-    unsigned int rand_len = get_client_rand_len(server, local, datalength);
+    unsigned int rand_len = get_client_rand_len(local, server, datalength);
     int out_size = (int) rand_len + datalength + 2;
     outdata[0] = (char) ((uint8_t) datalength ^ local->last_client_hash[14]);
     outdata[1] = (char) ((uint8_t) (datalength >> 8) ^ local->last_client_hash[15]);
@@ -553,7 +553,7 @@ int auth_chain_a_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
 
         int data_len = (int) (((unsigned) (recv_buffer[1] ^ local->last_server_hash[15]) << 8) +
                               (recv_buffer[0] ^ local->last_server_hash[14]));
-        int rand_len = get_server_rand_len(server, local, data_len);
+        int rand_len = get_server_rand_len(local, server, data_len);
         int len = rand_len + data_len;
         if (len >= 4096) {
             local->recv_buffer_size = 0;
