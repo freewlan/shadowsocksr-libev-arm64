@@ -28,6 +28,29 @@ void i64_memcpy(uint8_t *target, uint8_t *source) {
         target[i] = source[7 - i];
 }
 
+int find_pos(int arr[], int length, int key) {
+    int low = 0;
+    int high = length - 1;
+    int middle = -1;
+
+    if (key > arr[high])
+        return length;
+
+    while (low < high) {
+        middle = (low + high) / 2;
+        if (key > arr[middle]) {
+            low = middle + 1;
+        } else if (key <= arr[middle]) {
+            high = middle;
+        }
+    }
+    return low;
+}
+
+int data_size_list_length_compare(const void *a, const void *b) {
+    return (*(int *) a - *(int *) b);
+}
+
 void shift128plus_init_from_bin(shift128plus_ctx *ctx, uint8_t *bin, int bin_size) {
     uint8_t fill_bin[16] = {0};
     memcpy(fill_bin, bin, bin_size);
@@ -87,7 +110,13 @@ typedef struct auth_chain_local_data {
     enc_ctx_t *cipher_client_ctx;
     enc_ctx_t *cipher_server_ctx;
 
-    unsigned int (*get_tcp_rand_len)(int datalength, shift128plus_ctx *random, uint8_t *last_hash);
+    unsigned int (*get_tcp_rand_len)(
+            auth_chain_local_data *local,
+            server_info *server,
+            int datalength,
+            shift128plus_ctx *random,
+            uint8_t *last_hash
+    );
 
     void *auth_chain_special_data;
 } auth_chain_local_data;
@@ -107,7 +136,13 @@ void auth_chain_local_data_init(auth_chain_local_data *local) {
     local->get_tcp_rand_len = NULL;
 }
 
-unsigned int auth_chain_a_get_rand_len(int datalength, shift128plus_ctx *random, uint8_t *last_hash) {
+unsigned int auth_chain_a_get_rand_len(
+        auth_chain_local_data *local,
+        server_info *server,
+        int datalength,
+        shift128plus_ctx *random,
+        uint8_t *last_hash
+) {
     if (datalength > 1440)
         return 0;
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
@@ -120,11 +155,34 @@ unsigned int auth_chain_a_get_rand_len(int datalength, shift128plus_ctx *random,
     return shift128plus_next(random) % 1021;
 }
 
-unsigned int auth_chain_b_get_rand_len(int datalength, shift128plus_ctx *random, uint8_t *last_hash) {
+unsigned int auth_chain_b_get_rand_len(
+        auth_chain_local_data *local,
+        server_info *server,
+        int datalength,
+        shift128plus_ctx *random,
+        uint8_t *last_hash
+) {
     if (datalength > 1440)
         return 0;
-    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
+    uint16_t overhead = server->overhead;
+    auth_chain_b_data *special_data = (auth_chain_b_data *) local->auth_chain_special_data;
+
     // TODO auth_chain_b_get_rand_len
+    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
+    int pos = find_pos(special_data->data_size_list, special_data->data_size_list_length, datalength + overhead);
+    int final_pos = pos + shift128plus_next(random) % special_data->data_size_list_length;
+    if (final_pos < special_data->data_size_list_length) {
+        return special_data->data_size_list[final_pos] - datalength - overhead;
+    }
+
+    int pos2 = find_pos(special_data->data_size_list2, special_data->data_size_list2_length, datalength + overhead);
+    int final_pos2 = pos2 + shift128plus_next(random) % special_data->data_size_list2_length;
+    if (final_pos2 < special_data->data_size_list2_length) {
+        return data_size_list2[final_pos2] - datalength - overhead;
+    }
+    if (final_pos2 < pos2 + special_data->data_size_list2_length - 1) {
+        return 0;
+    }
 
     if (datalength > 1300)
         return shift128plus_next(random) % 31;
@@ -135,8 +193,38 @@ unsigned int auth_chain_b_get_rand_len(int datalength, shift128plus_ctx *random,
     return shift128plus_next(random) % 1021;
 }
 
-void init_data_size(auth_chain_local_data *self) {
-// TODO
+void init_data_size(obfs *self, server_info *server) {
+    auth_chain_b_data *special_data = (auth_chain_b_data *)
+            ((auth_chain_local_data *) self->l_data)->auth_chain_special_data;
+
+    shift128plus_ctx *random = (shift128plus_ctx *) malloc(sizeof(shift128plus_ctx));
+
+    shift128plus_init_from_bin(random, server->key, 16);
+    special_data->data_size_list_length = shift128plus_next(random) % 8 + 4;
+    special_data->data_size_list = (int *) malloc(special_data->data_size_list_length * sizeof(int));
+    for (int i = 0; i < special_data->data_size_list_length; i++) {
+        special_data->data_size_list[i] = shift128plus_next(random) % 2340 % 2040 % 1440;
+    }
+    // stdlib qsort
+    qsort(special_data->data_size_list,
+          special_data->data_size_list_length,
+          sizeof(int),
+          data_size_list_length_compare
+    );
+
+    special_data->data_size_list2_length = shift128plus_next(random) % 16 + 8;
+    special_data->data_size_list2 = (int *) malloc(special_data->data_size_list2_length * sizeof(int));
+    for (int i = 0; i < special_data->data_size_list2_length; i++) {
+        special_data->data_size_list2[i] = shift128plus_next(random) % 2340 % 2040 % 1440;
+    }
+    // stdlib qsort
+    qsort(special_data->data_size_list2,
+          special_data->data_size_list2_length,
+          sizeof(int),
+          data_size_list_length_compare
+    );
+
+    free(random);
 }
 
 void *auth_chain_a_init_data() {
@@ -148,7 +236,7 @@ void *auth_chain_a_init_data() {
 }
 
 void *auth_chain_b_init_data() {
-// TODO auth_chain_global_data 互斥初始化？
+    return auth_chain_a_init_data();
 }
 
 obfs *auth_chain_a_new_obfs() {
@@ -172,7 +260,6 @@ obfs *auth_chain_b_new_obfs() {
     special_data->data_size_list2 = NULL;
     special_data->data_size_list2_length = 0;
     ((auth_chain_local_data *) self->l_data)->auth_chain_special_data = special_data;
-    // TODO init_data_size() init in there ?
     return self;
 }
 
@@ -229,9 +316,16 @@ void auth_chain_b_dispose(obfs *self) {
     auth_chain_a_dispose(self);
 }
 
-void auth_chain_set_server_info(obfs *self, server_info *server) {
+void auth_chain_a_set_server_info(obfs *self, server_info *server) {
     server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
+}
+
+void auth_chain_b_set_server_info(obfs *self, server_info *server) {
+    server->overhead = 4;
+    memmove(&self->server, server, sizeof(server_info));
+    // init_data_size() init in there
+    init_data_size(self, server);
 }
 
 unsigned int udp_get_rand_len(shift128plus_ctx *random, uint8_t *last_hash) {
@@ -245,19 +339,19 @@ unsigned int get_rand_start_pos(int rand_len, shift128plus_ctx *random) {
     return 0;
 }
 
-unsigned int get_client_rand_len(auth_chain_local_data *local, int datalength) {
-    return ((auth_chain_local_data *) self->l_data)->get_tcp_rand_len(datalength, &local->random_client,
-                                                                      local->last_client_hash);
+unsigned int get_client_rand_len(auth_chain_local_data *local, server_info *server, int datalength) {
+    return ((auth_chain_local_data *) self->l_data)->
+            get_tcp_rand_len(local, server, datalength, &local->random_client, local->last_client_hash);
 }
 
-unsigned int get_server_rand_len(auth_chain_local_data *local, int datalength) {
-    return ((auth_chain_local_data *) self->l_data)->get_tcp_rand_len(datalength, &local->random_server,
-                                                                      local->last_server_hash);
+unsigned int get_server_rand_len(auth_chain_local_data *local, server_info *server, int datalength) {
+    return ((auth_chain_local_data *) self->l_data)->
+            get_tcp_rand_len(local, server, datalength, &local->random_server, local->last_server_hash);
 }
 
 int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain_local_data *local,
                            server_info *server) {
-    unsigned int rand_len = get_client_rand_len(local, datalength);
+    unsigned int rand_len = get_client_rand_len(server, local, datalength);
     int out_size = (int) rand_len + datalength + 2;
     outdata[0] = (char) ((uint8_t) datalength ^ local->last_client_hash[14]);
     outdata[1] = (char) ((uint8_t) (datalength >> 8) ^ local->last_client_hash[15]);
@@ -459,7 +553,7 @@ int auth_chain_a_client_post_decrypt(obfs *self, char **pplaindata, int dataleng
 
         int data_len = (int) (((unsigned) (recv_buffer[1] ^ local->last_server_hash[15]) << 8) +
                               (recv_buffer[0] ^ local->last_server_hash[14]));
-        int rand_len = get_server_rand_len(local, data_len);
+        int rand_len = get_server_rand_len(server, local, data_len);
         int len = rand_len + data_len;
         if (len >= 4096) {
             local->recv_buffer_size = 0;
