@@ -228,10 +228,10 @@ unsigned int auth_chain_c_get_rand_len(
     }
 
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
-    int pos = find_pos(special_data->data_size0_list, special_data->data_size_list0_length, other_data_size);
+    int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
     // random select a size in the leftover data_size_list0
     int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
-    return special_data->data_size0_list[final_pos] - other_data_size;
+    return special_data->data_size_list0[final_pos] - other_data_size;
 }
 
 unsigned int auth_chain_d_get_rand_len(
@@ -252,10 +252,10 @@ unsigned int auth_chain_d_get_rand_len(
     }
 
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
-    int pos = find_pos(special_data->data_size0_list, special_data->data_size_list0_length, other_data_size);
+    int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
     // random select a size in the leftover data_size_list0
     int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
-    return special_data->data_size0_list[final_pos] - other_data_size;
+    return special_data->data_size_list0[final_pos] - other_data_size;
 }
 
 void auth_chain_b_init_data_size(obfs *self, server_info *server) {
@@ -333,7 +333,7 @@ void auth_chain_d_check_and_patch_data_size(obfs *self, shift128plus_ctx *random
 
             ++special_data->data_size_list0_length;
 
-            auth_chain_d_check_and_patch_data_size(obfs * self, shift128plus_ctx * random);
+            auth_chain_d_check_and_patch_data_size(self, random);
         }
     }
 }
