@@ -11,10 +11,16 @@
 
 void * auth_chain_a_init_data();
 void * auth_chain_b_init_data();
+void * auth_chain_c_init_data();
+void * auth_chain_d_init_data();
 obfs * auth_chain_a_new_obfs();
 obfs * auth_chain_b_new_obfs();
+obfs * auth_chain_c_new_obfs();
+obfs * auth_chain_d_new_obfs();
 void auth_chain_a_dispose(obfs *self);
 void auth_chain_b_dispose(obfs *self);
+void auth_chain_c_dispose(obfs *self);
+void auth_chain_d_dispose(obfs *self);
 
 
 int auth_chain_a_client_pre_encrypt(obfs *self, char **pplaindata, int datalength, size_t* capacity);
