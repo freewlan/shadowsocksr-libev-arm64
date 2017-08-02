@@ -203,6 +203,61 @@ unsigned int auth_chain_b_get_rand_len(
     return shift128plus_next(random) % 1021;
 }
 
+unsigned int auth_chain_c_get_rand_len(
+        auth_chain_local_data *local,
+        server_info *server,
+        int datalength,
+        shift128plus_ctx *random,
+        uint8_t *last_hash
+) {
+    uint16_t overhead = server->overhead;
+    auth_chain_c_data *special_data = (auth_chain_c_data *) local->auth_chain_special_data;
+
+    int other_data_size = datalength + overhead;
+
+    if (other_data_size >= special_data->data_size_list0[special_data->data_size_list0_length - 1]) {
+        if (datalength > 1440)
+            return 0;
+        if (datalength > 1300)
+            return shift128plus_next(random) % 31;
+        if (datalength > 900)
+            return shift128plus_next(random) % 127;
+        if (datalength > 400)
+            return shift128plus_next(random) % 521;
+        return shift128plus_next(random) % 1021;
+    }
+
+    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
+    int pos = find_pos(special_data->data_size0_list, special_data->data_size_list0_length, other_data_size);
+    // random select a size in the leftover data_size_list0
+    int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
+    return special_data->data_size0_list[final_pos] - other_data_size;
+}
+
+unsigned int auth_chain_d_get_rand_len(
+        auth_chain_local_data *local,
+        server_info *server,
+        int datalength,
+        shift128plus_ctx *random,
+        uint8_t *last_hash
+) {
+    uint16_t overhead = server->overhead;
+    auth_chain_c_data *special_data = (auth_chain_c_data *) local->auth_chain_special_data;
+
+    int other_data_size = datalength + overhead;
+
+    // if other_data_size > the bigest item in data_size_list0, not padding any data
+    if (other_data_size >= special_data->data_size_list0[special_data->data_size_list0_length - 1]) {
+        return 0;
+    }
+
+    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
+    int pos = find_pos(special_data->data_size0_list, special_data->data_size_list0_length, other_data_size);
+    // random select a size in the leftover data_size_list0
+    int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
+    return special_data->data_size0_list[final_pos] - other_data_size;
+}
+
 void auth_chain_b_init_data_size(obfs *self, server_info *server) {
     auth_chain_b_data *special_data = (auth_chain_b_data *)
             ((auth_chain_local_data *) self->l_data)->auth_chain_special_data;
@@ -306,6 +361,7 @@ void auth_chain_d_init_data_size(obfs *self, server_info *server) {
     int old_len = special_data->data_size_list0_length;
     auth_chain_d_check_and_patch_data_size(self, random);
     if (old_len != special_data->data_size_list0_length) {
+        // if check_and_patch_data_size are work, re-sort again.
         // stdlib qsort
         qsort(special_data->data_size_list0,
               special_data->data_size_list0_length,
