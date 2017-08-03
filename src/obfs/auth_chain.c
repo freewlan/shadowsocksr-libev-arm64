@@ -215,6 +215,8 @@ unsigned int auth_chain_c_get_rand_len(
 
     int other_data_size = datalength + overhead;
 
+    // must init random in here to make sure output sync in server and client
+    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     if (other_data_size >= special_data->data_size_list0[special_data->data_size_list0_length - 1]) {
         if (datalength > 1440)
             return 0;
@@ -227,7 +229,6 @@ unsigned int auth_chain_c_get_rand_len(
         return shift128plus_next(random) % 1021;
     }
 
-    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
     // random select a size in the leftover data_size_list0
     int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
