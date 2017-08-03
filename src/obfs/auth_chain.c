@@ -11,7 +11,8 @@ uint32_t g_endian_test = 1;
 
 // this value control the chain_d's data_size_list max list
 // and also it will control the auth_chain_d_check_and_patch_data_size() function's max stack deep
-// TODO make a optimization to remove it
+// BUT this magic number cannot change, because change this will case rand_data_len function return different len between sender and receiver
+// TODO make a optimization to avoid stack overflow
 #define AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE 64
 
 typedef struct shift128plus_ctx {
