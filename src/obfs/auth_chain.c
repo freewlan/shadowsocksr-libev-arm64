@@ -336,6 +336,9 @@ void auth_chain_d_check_and_patch_data_size(obfs *self, shift128plus_ctx *random
             ++special_data->data_size_list0_length;
 
             auth_chain_d_check_and_patch_data_size(self, random);
+        } else {
+            // TODO memory not enough, todo disconnect this connect
+            // NOTICE small memory device do not use this obfs
         }
     }
 }
