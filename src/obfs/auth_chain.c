@@ -9,12 +9,6 @@
 
 uint32_t g_endian_test = 1;
 
-// this value control the chain_d's data_size_list max list
-// and also it will control the auth_chain_d_check_and_patch_data_size() function's max stack deep
-// BUT this magic number cannot change, because change this will case rand_data_len function return different len between sender and receiver
-// TODO make a optimization to avoid stack overflow
-#define AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE 64
-
 typedef struct shift128plus_ctx {
     uint64_t v[2];
 } shift128plus_ctx;
@@ -317,29 +311,18 @@ void auth_chain_c_init_data_size(obfs *self, server_info *server) {
     free(random);
 }
 
+#define AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE 64
 void auth_chain_d_check_and_patch_data_size(obfs *self, shift128plus_ctx *random) {
     auth_chain_c_data *special_data = (auth_chain_c_data *)
             ((auth_chain_local_data *) self->l_data)->auth_chain_special_data;
 
-    if (special_data->data_size_list0[special_data->data_size_list0_length - 1] < 1300
-        && special_data->data_size_list0_length < AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE) {
+    while (special_data->data_size_list0[special_data->data_size_list0_length - 1] < 1300
+           && special_data->data_size_list0_length < AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE) {
 
         // data_size_list0.size + 1
-        // TODO optimization it to a loop to avoid stack overflow and pre-alloc array to avoid wast memory
-        int *new_ptr = (int *) realloc(special_data->data_size_list0, special_data->data_size_list0_length + 1);
-        if (new_ptr != NULL) {
-            special_data->data_size_list0 = new_ptr;
-
-            special_data->data_size_list0[special_data->data_size_list0_length] =
-                    shift128plus_next(random) % 2340 % 2040 % 1440;
-
-            ++special_data->data_size_list0_length;
-
-            auth_chain_d_check_and_patch_data_size(self, random);
-        } else {
-            // TODO memory not enough, todo disconnect this connect
-            // NOTICE small memory device do not use this obfs
-        }
+        special_data->data_size_list0[special_data->data_size_list0_length] =
+                shift128plus_next(random) % 2340 % 2040 % 1440;
+        ++(special_data->data_size_list0_length);
     }
 }
 
@@ -352,7 +335,7 @@ void auth_chain_d_init_data_size(obfs *self, server_info *server) {
 
     shift128plus_init_from_bin(random, server->key, 16);
     special_data->data_size_list0_length = shift128plus_next(random) % (8 + 16) + (4 + 8);
-    special_data->data_size_list0 = (int *) malloc(special_data->data_size_list0_length * sizeof(int));
+    special_data->data_size_list0 = (int *) malloc(AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE * sizeof(int));
     for (int i = 0; i < special_data->data_size_list0_length; i++) {
         special_data->data_size_list0[i] = shift128plus_next(random) % 2340 % 2040 % 1440;
     }
