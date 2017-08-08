@@ -168,7 +168,7 @@ int tls12_ticket_auth_client_encode(obfs *self, char **pencryptdata, int datalen
     }
 
     if (local->handshake_status == 0) {
-#define CSTR_DECL(name, len, str) const char* name = str; const int len = sizeof(str) - 1;
+#define CSTR_DECL(name, len, str) const char* name = str; const int (len) = sizeof(str) - 1;
         CSTR_DECL(tls_data0, tls_data0_len, "\x00\x1c\xc0\x2b\xc0\x2f\xcc\xa9\xcc\xa8\xcc\x14\xcc\x13\xc0\x0a\xc0\x14\xc0\x09\xc0\x13\x00\x9c\x00\x35\x00\x2f\x00\x0a\x01\x00"
                 );
         CSTR_DECL(tls_data1, tls_data1_len, "\xff\x01\x00\x01\x00"
