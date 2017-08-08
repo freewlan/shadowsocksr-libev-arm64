@@ -895,6 +895,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents) {
 
                 if (server_env->protocol_plugin) {
                     server->protocol = server_env->protocol_plugin->new_obfs();
+                    // overhead must count on this
                     _server_info.overhead = (uint16_t)
                             (
                                     (server_env->protocol_plugin ?

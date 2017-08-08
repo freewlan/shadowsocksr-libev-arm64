@@ -152,12 +152,12 @@ unsigned int auth_chain_a_get_rand_len(
         return 0;
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     if (datalength > 1300)
-        return shift128plus_next(random) % 31;
+        return (unsigned int) (shift128plus_next(random) % 31);
     if (datalength > 900)
-        return shift128plus_next(random) % 127;
+        return (unsigned int) (shift128plus_next(random) % 127);
     if (datalength > 400)
-        return shift128plus_next(random) % 521;
-    return shift128plus_next(random) % 1021;
+        return (unsigned int) (shift128plus_next(random) % 521);
+    return (unsigned int) (shift128plus_next(random) % 1021);
 }
 
 unsigned int auth_chain_b_get_rand_len(
@@ -172,30 +172,32 @@ unsigned int auth_chain_b_get_rand_len(
     uint16_t overhead = server->overhead;
     auth_chain_b_data *special_data = (auth_chain_b_data *) local->auth_chain_special_data;
 
+    int other_data_size = datalength + overhead;
+
     // auth_chain_b_get_rand_len
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
-    int pos = find_pos(special_data->data_size_list, special_data->data_size_list_length, datalength + overhead);
-    int final_pos = pos + shift128plus_next(random) % special_data->data_size_list_length;
+    int pos = find_pos(special_data->data_size_list, special_data->data_size_list_length, other_data_size);
+    uint64_t final_pos = pos + shift128plus_next(random) % special_data->data_size_list_length;
     if (final_pos < special_data->data_size_list_length) {
-        return special_data->data_size_list[final_pos] - datalength - overhead;
+        return special_data->data_size_list[final_pos] - other_data_size;
     }
 
-    int pos2 = find_pos(special_data->data_size_list2, special_data->data_size_list2_length, datalength + overhead);
-    int final_pos2 = pos2 + shift128plus_next(random) % special_data->data_size_list2_length;
+    int pos2 = find_pos(special_data->data_size_list2, special_data->data_size_list2_length, other_data_size);
+    uint64_t final_pos2 = pos2 + shift128plus_next(random) % special_data->data_size_list2_length;
     if (final_pos2 < special_data->data_size_list2_length) {
-        return special_data->data_size_list2[final_pos2] - datalength - overhead;
+        return special_data->data_size_list2[final_pos2] - other_data_size;
     }
     if (final_pos2 < pos2 + special_data->data_size_list2_length - 1) {
         return 0;
     }
 
     if (datalength > 1300)
-        return shift128plus_next(random) % 31;
+        return (unsigned int) (shift128plus_next(random) % 31);
     if (datalength > 900)
-        return shift128plus_next(random) % 127;
+        return (unsigned int) (shift128plus_next(random) % 127);
     if (datalength > 400)
-        return shift128plus_next(random) % 521;
-    return shift128plus_next(random) % 1021;
+        return (unsigned int) (shift128plus_next(random) % 521);
+    return (unsigned int) (shift128plus_next(random) % 1021);
 }
 
 unsigned int auth_chain_c_get_rand_len(
@@ -216,17 +218,17 @@ unsigned int auth_chain_c_get_rand_len(
         if (datalength > 1440)
             return 0;
         if (datalength > 1300)
-            return shift128plus_next(random) % 31;
+            return (unsigned int) (shift128plus_next(random) % 31);
         if (datalength > 900)
-            return shift128plus_next(random) % 127;
+            return (unsigned int) (shift128plus_next(random) % 127);
         if (datalength > 400)
-            return shift128plus_next(random) % 521;
-        return shift128plus_next(random) % 1021;
+            return (unsigned int) (shift128plus_next(random) % 521);
+        return (unsigned int) (shift128plus_next(random) % 1021);
     }
 
     int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
     // random select a size in the leftover data_size_list0
-    int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
+    uint64_t final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
     return special_data->data_size_list0[final_pos] - other_data_size;
 }
 
@@ -250,7 +252,7 @@ unsigned int auth_chain_d_get_rand_len(
     shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
     // random select a size in the leftover data_size_list0
-    int final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
+    uint64_t final_pos = pos + shift128plus_next(random) % (special_data->data_size_list0_length - pos);
     return special_data->data_size_list0[final_pos] - other_data_size;
 }
 
@@ -312,6 +314,7 @@ void auth_chain_c_init_data_size(obfs *self, server_info *server) {
 }
 
 #define AUTH_CHAIN_D_MAX_DATA_SIZE_LIST_LIMIT_SIZE 64
+
 void auth_chain_d_check_and_patch_data_size(obfs *self, shift128plus_ctx *random) {
     auth_chain_c_data *special_data = (auth_chain_c_data *)
             ((auth_chain_local_data *) self->l_data)->auth_chain_special_data;
@@ -506,26 +509,25 @@ void auth_chain_d_dispose(obfs *self) {
 }
 
 void auth_chain_a_set_server_info(obfs *self, server_info *server) {
-    server->overhead = 4;
+    // dont change server.overhead in there
+    // the server.overhead are counted from the local.c
+    // the input's server.overhead is the total server.overhead that sum of all the plugin's overhead
     memmove(&self->server, server, sizeof(server_info));
 }
 
 void auth_chain_b_set_server_info(obfs *self, server_info *server) {
-    server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_b_init_data_size() init in there
     auth_chain_b_init_data_size(self, &self->server);
 }
 
 void auth_chain_c_set_server_info(obfs *self, server_info *server) {
-    server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_c_init_data_size() init in there
     auth_chain_c_init_data_size(self, &self->server);
 }
 
 void auth_chain_d_set_server_info(obfs *self, server_info *server) {
-    server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_d_init_data_size() init in there
     auth_chain_d_init_data_size(self, &self->server);
