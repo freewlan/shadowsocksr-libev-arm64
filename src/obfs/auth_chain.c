@@ -514,21 +514,21 @@ void auth_chain_b_set_server_info(obfs *self, server_info *server) {
     server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_b_init_data_size() init in there
-    auth_chain_b_init_data_size(self, server);
+    auth_chain_b_init_data_size(self, &self->server);
 }
 
 void auth_chain_c_set_server_info(obfs *self, server_info *server) {
     server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_c_init_data_size() init in there
-    auth_chain_c_init_data_size(self, server);
+    auth_chain_c_init_data_size(self, &self->server);
 }
 
 void auth_chain_d_set_server_info(obfs *self, server_info *server) {
     server->overhead = 4;
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_d_init_data_size() init in there
-    auth_chain_d_init_data_size(self, server);
+    auth_chain_d_init_data_size(self, &self->server);
 }
 
 unsigned int udp_get_rand_len(shift128plus_ctx *random, uint8_t *last_hash) {
@@ -724,6 +724,7 @@ int auth_chain_a_client_pre_encrypt(obfs *self, char **pplaindata, int datalengt
     len = (int) (buffer - out_buffer);
     if ((int) *capacity < len) {
         *pplaindata = (char *) realloc(*pplaindata, *capacity = (size_t) (len * 2));
+        // TODO check realloc failed
         plaindata = *pplaindata;
     }
     local->last_data_len = datalength;
