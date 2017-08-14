@@ -256,6 +256,28 @@ unsigned int auth_chain_d_get_rand_len(
     return special_data->data_size_list0[final_pos] - other_data_size;
 }
 
+unsigned int auth_chain_e_get_rand_len(
+        auth_chain_local_data *local,
+        server_info *server,
+        int datalength,
+        shift128plus_ctx *random,
+        uint8_t *last_hash
+) {
+    uint16_t overhead = server->overhead;
+    auth_chain_c_data *special_data = (auth_chain_c_data *) local->auth_chain_special_data;
+
+    int other_data_size = datalength + overhead;
+
+    // if other_data_size > the bigest item in data_size_list0, not padding any data
+    if (other_data_size >= special_data->data_size_list0[special_data->data_size_list0_length - 1]) {
+        return 0;
+    }
+
+    // use the mini size in the data_size_list0
+    int pos = find_pos(special_data->data_size_list0, special_data->data_size_list0_length, other_data_size);
+    return special_data->data_size_list0[pos] - other_data_size;
+}
+
 void auth_chain_b_init_data_size(obfs *self, server_info *server) {
     auth_chain_b_data *special_data = (auth_chain_b_data *)
             ((auth_chain_local_data *) self->l_data)->auth_chain_special_data;
@@ -384,6 +406,10 @@ void *auth_chain_d_init_data() {
     return auth_chain_c_init_data();
 }
 
+void *auth_chain_e_init_data() {
+    return auth_chain_d_init_data();
+}
+
 obfs *auth_chain_a_new_obfs() {
     obfs *self = new_obfs();
     self->l_data = malloc(sizeof(auth_chain_local_data));
@@ -428,6 +454,13 @@ obfs *auth_chain_d_new_obfs() {
     return self;
 }
 
+obfs *auth_chain_e_new_obfs() {
+    obfs *self = auth_chain_d_new_obfs();
+    ((auth_chain_local_data *) self->l_data)->salt = "auth_chain_e";
+    ((auth_chain_local_data *) self->l_data)->get_tcp_rand_len = auth_chain_e_get_rand_len;
+    return self;
+}
+
 int auth_chain_a_get_overhead(obfs *self) {
     return 4;
 }
@@ -442,6 +475,10 @@ int auth_chain_c_get_overhead(obfs *self) {
 
 int auth_chain_d_get_overhead(obfs *self) {
     return auth_chain_c_get_overhead(self);
+}
+
+int auth_chain_e_get_overhead(obfs *self) {
+    return auth_chain_d_get_overhead(self);
 }
 
 void auth_chain_a_dispose(obfs *self) {
@@ -508,6 +545,10 @@ void auth_chain_d_dispose(obfs *self) {
     auth_chain_c_dispose(self);
 }
 
+void auth_chain_e_dispose(obfs *self) {
+    auth_chain_d_dispose(self);
+}
+
 void auth_chain_a_set_server_info(obfs *self, server_info *server) {
     // dont change server.overhead in there
     // the server.overhead are counted from the local.c
@@ -531,6 +572,10 @@ void auth_chain_d_set_server_info(obfs *self, server_info *server) {
     memmove(&self->server, server, sizeof(server_info));
     // auth_chain_d_init_data_size() init in there
     auth_chain_d_init_data_size(self, &self->server);
+}
+
+void auth_chain_e_set_server_info(obfs *self, server_info *server) {
+    auth_chain_d_set_server_info(self, server);
 }
 
 unsigned int udp_get_rand_len(shift128plus_ctx *random, uint8_t *last_hash) {
