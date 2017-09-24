@@ -411,7 +411,7 @@ void auth_chain_f_init_data_size(obfs *self, server_info *server, const uint8_t 
 
     shift128plus_ctx *random = (shift128plus_ctx *) malloc(sizeof(shift128plus_ctx));
 
-    uint8_t *newKey = (uint8_t) malloc(sizeof(uint8_t) * server->key_len);
+    uint8_t *newKey = (uint8_t *) malloc(sizeof(uint8_t) * server->key_len);
     memcpy(newKey, server->key, server->key_len);
     for (int i = 0; i != 8; ++i) {
         newKey[i] ^= key_change_datetime_key_bytes[i];
@@ -681,7 +681,7 @@ void auth_chain_f_set_server_info(obfs *self, server_info *server) {
         }
     }
 
-    uint8_t *key_change_datetime_key_bytes = (uint8_t) malloc(sizeof(uint8_t) * 8);
+    uint8_t *key_change_datetime_key_bytes = (uint8_t *) malloc(sizeof(uint8_t) * 8);
     uint64_t key_change_datetime_key = (uint64_t) (time(NULL)) / key_change_interval;
     for (int i = 7; i >= 0; --i) {
         key_change_datetime_key_bytes[7 - i] = (uint8_t) ((key_change_datetime_key >> (8 * i)) & 0xFF);
