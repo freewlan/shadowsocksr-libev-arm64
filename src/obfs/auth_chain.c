@@ -472,6 +472,10 @@ void *auth_chain_e_init_data() {
     return auth_chain_d_init_data();
 }
 
+void *auth_chain_f_init_data() {
+    return auth_chain_e_init_data();
+}
+
 obfs *auth_chain_a_new_obfs() {
     obfs *self = new_obfs();
     self->l_data = malloc(sizeof(auth_chain_local_data));
@@ -620,6 +624,10 @@ void auth_chain_d_dispose(obfs *self) {
 
 void auth_chain_e_dispose(obfs *self) {
     auth_chain_d_dispose(self);
+}
+
+void auth_chain_f_dispose(obfs *self) {
+    auth_chain_e_dispose(self);
 }
 
 void auth_chain_a_set_server_info(obfs *self, server_info *server) {
