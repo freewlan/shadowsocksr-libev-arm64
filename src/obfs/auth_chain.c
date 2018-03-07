@@ -265,6 +265,7 @@ unsigned int auth_chain_e_get_rand_len(
         shift128plus_ctx *random,
         uint8_t *last_hash
 ) {
+    shift128plus_init_from_bin_datalen(random, last_hash, 16, datalength);
     uint16_t overhead = server->overhead;
     auth_chain_c_data *special_data = (auth_chain_c_data *) local->auth_chain_special_data;
 
@@ -720,7 +721,7 @@ int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain
     outdata[1] = (char) ((uint8_t) (datalength >> 8) ^ local->last_client_hash[15]);
 
     {
-        uint8_t rnd_data[rand_len];
+        uint8_t *rnd_data = (uint8_t *)malloc(rand_len);
         rand_bytes(rnd_data, (int) rand_len);
         if (datalength > 0) {
             int start_pos = get_rand_start_pos(rand_len, &local->random_client);
@@ -732,17 +733,18 @@ int auth_chain_a_pack_data(char *data, int datalength, char *outdata, auth_chain
         } else {
             memcpy(outdata + 2, rnd_data, rand_len);
         }
+        free(rnd_data);
     }
 
     uint8_t key_len = (uint8_t) (local->user_key_len + 4);
-    uint8_t key[key_len];
+    uint8_t *key = (uint8_t *)malloc(key_len);
     memcpy(key, local->user_key, local->user_key_len);
     memintcopy_lt(key + key_len - 4, local->pack_id);
     ++local->pack_id;
 
     ss_md5_hmac_with_key((char *) local->last_client_hash, outdata, out_size, key, key_len);
     memcpy(outdata + out_size, local->last_client_hash, 2);
-
+    free(key);
     return out_size + 2;
 }
 
@@ -761,7 +763,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, server_info *ser
 
     char encrypt[20];
 
-    uint8_t key[server->iv_len + server->key_len];
+    uint8_t *key = (uint8_t *)malloc(server->iv_len + server->key_len);
     uint8_t key_len = (uint8_t) (server->iv_len + server->key_len);
     memcpy(key, server->iv, server->iv_len);
     memcpy(key + server->iv_len, server->key, server->key_len);
@@ -781,6 +783,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, server_info *ser
         ss_md5_hmac_with_key((char *) local->last_client_hash, (char *) outdata, 4, key, key_len);
         memcpy(outdata + 4, local->last_client_hash, 8);
     }
+    free(key);
     // uid & 16 bytes auth data
     {
         uint8_t uid[4];
@@ -789,7 +792,7 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, server_info *ser
                 char *param = server->param;
                 char *delim = strchr(param, ':');
                 if (delim != NULL) {
-                    char uid_str[16] = {};
+                    char uid_str[16] = "";
                     strncpy(uid_str, param, delim - param);
                     char key_str[128];
                     strcpy(key_str, delim + 1);
@@ -814,11 +817,12 @@ int auth_chain_a_pack_auth_data(auth_chain_global_data *global, server_info *ser
         }
 
         char encrypt_key_base64[256] = {0};
-        unsigned char encrypt_key[local->user_key_len];
+        unsigned char *encrypt_key = (unsigned char *)malloc(local->user_key_len);
         memcpy(encrypt_key, local->user_key, local->user_key_len);
         base64_encode(encrypt_key, (unsigned int) local->user_key_len, encrypt_key_base64);
+        free(encrypt_key);
 
-        int salt_len = strlen(salt);
+        int salt_len = (int)strlen(salt);
         int base64_len = (local->user_key_len + 2) / 3 * 4;
         memcpy(encrypt_key_base64 + base64_len, salt, salt_len);
 
@@ -974,14 +978,14 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
     char *plaindata = *pplaindata;
     server_info *server = (server_info *) &self->server;
     auth_chain_local_data *local = (auth_chain_local_data *) self->l_data;
-    char out_buffer[datalength + 1024];
+    char *out_buffer = (char *)malloc(datalength + 1024);
 
     if (local->user_key == NULL) {
         if (self->server.param != NULL && self->server.param[0] != 0) {
             char *param = self->server.param;
             char *delim = strchr(param, ':');
             if (delim != NULL) {
-                char uid_str[16] = {};
+                char uid_str[16] = "";
                 strncpy(uid_str, param, delim - param);
                 char key_str[128];
                 strcpy(key_str, delim + 1);
@@ -1006,7 +1010,7 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
     uint8_t hash[16];
     ss_md5_hmac_with_key((char *) hash, auth_data, 3, server->key, server->key_len);
     int rand_len = udp_get_rand_len(&local->random_client, hash);
-    uint8_t rnd_data[rand_len];
+    uint8_t *rnd_data = (uint8_t *)malloc(rand_len);
     rand_bytes(rnd_data, (int) rand_len);
     int outlength = datalength + rand_len + 8;
 
@@ -1031,6 +1035,7 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
     memmove(out_buffer + datalength, rnd_data, rand_len);
     memmove(out_buffer + outlength - 8, auth_data, 3);
     memmove(out_buffer + outlength - 5, uid, 4);
+    free(rnd_data);
 
     ss_md5_hmac_with_key((char *) hash, out_buffer, outlength - 1, local->user_key, local->user_key_len);
     memmove(out_buffer + outlength - 1, hash, 1);
@@ -1040,6 +1045,7 @@ int auth_chain_a_client_udp_pre_encrypt(obfs *self, char **pplaindata, int datal
         plaindata = *pplaindata;
     }
     memmove(plaindata, out_buffer, outlength);
+    free(out_buffer);
     return outlength;
 }
 

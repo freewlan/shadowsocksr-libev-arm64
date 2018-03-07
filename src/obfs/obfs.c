@@ -12,7 +12,7 @@ int rand_bytes(uint8_t *output, int len);
 #include "auth.h"
 #include "auth_chain.h"
 
-#include "encrypt.h"
+#include "../utils.h"
 
 void *init_data() {
     return malloc(1);
@@ -40,7 +40,7 @@ void dispose_obfs(obfs *self) {
     free(self);
 }
 
-obfs_class *new_obfs_class(char *plugin_name) {
+obfs_class *new_obfs_class(const char *plugin_name) {
     if (plugin_name == NULL)
         return NULL;
     if (strcmp(plugin_name, "origin") == 0)
@@ -254,7 +254,7 @@ obfs_class *new_obfs_class(char *plugin_name) {
         return plugin;
     } else if (strcmp(plugin_name, "auth_chain_f") == 0) {
         obfs_class *plugin = (obfs_class *) malloc(sizeof(obfs_class));
-        plugin->init_data = auth_chain_e_init_data;
+        plugin->init_data = auth_chain_f_init_data;
         plugin->new_obfs = auth_chain_f_new_obfs;
         plugin->get_overhead = auth_chain_f_get_overhead;
         plugin->get_server_info = get_server_info;
