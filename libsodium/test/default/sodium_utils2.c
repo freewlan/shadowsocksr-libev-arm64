@@ -1,4 +1,5 @@
 
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <limits.h>
@@ -11,8 +12,15 @@
 # warning The sodium_utils2 test is expected to fail with address sanitizer
 #endif
 
-static void segv_handler(int sig)
+#undef sodium_malloc
+#undef sodium_free
+#undef sodium_allocarray
+
+__attribute__((noreturn)) static void
+segv_handler(int sig)
 {
+    (void) sig;
+
     printf("Intentional segfault / bus error caught\n");
     printf("OK\n");
 #ifdef SIGSEGV
@@ -27,13 +35,17 @@ static void segv_handler(int sig)
     exit(0);
 }
 
-int main(void)
+int
+main(void)
 {
-    void *buf;
-    size_t size;
+    void *       buf;
+    size_t       size;
     unsigned int i;
 
     if (sodium_malloc(SIZE_MAX - 1U) != NULL) {
+        return 1;
+    }
+    if (sodium_malloc(0U) == NULL) {
         return 1;
     }
     if (sodium_allocarray(SIZE_MAX / 2U + 1U, SIZE_MAX / 2U) != NULL) {
@@ -50,8 +62,8 @@ int main(void)
     sodium_free(sodium_malloc(0U));
     sodium_free(NULL);
     for (i = 0U; i < 10000U; i++) {
-        size = randombytes_uniform(100000U);
-        buf = sodium_malloc(size);
+        size = 1U + randombytes_uniform(100000U);
+        buf  = sodium_malloc(size);
         assert(buf != NULL);
         memset(buf, i, size);
         sodium_mprotect_noaccess(buf);
@@ -68,16 +80,23 @@ int main(void)
 #ifdef SIGABRT
     signal(SIGABRT, segv_handler);
 #endif
-    size = randombytes_uniform(100000U);
-    buf = sodium_malloc(size);
+    size = 1U + randombytes_uniform(100000U);
+    buf  = sodium_malloc(size);
     assert(buf != NULL);
+
+/* old versions of asan emit a warning because they don't support mlock*() */
+#ifndef __SANITIZE_ADDRESS__
     sodium_mprotect_readonly(buf);
     sodium_mprotect_readwrite(buf);
-#ifndef __EMSCRIPTEN__
-    sodium_memzero(((unsigned char *)buf) + size, 1U);
+#endif
+
+#if defined(HAVE_CATCHABLE_SEGV) && !defined(__EMSCRIPTEN__) && !defined(__SANITIZE_ADDRESS__)
+    sodium_memzero(((unsigned char *) buf) + size, 1U);
     sodium_mprotect_noaccess(buf);
     sodium_free(buf);
     printf("Overflow not caught\n");
+#else
+    segv_handler(0);
 #endif
     return 0;
 }
