@@ -1,0 +1,16 @@
+PACKAGE_TARNAME=@PACKAGE_TARNAME@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+docdir=@docdir@
+includedir=@includedir@
+libdir=@libdir@
+sphinxdir=${docdir}/html
+
+Name: libcork
+Description: A simple, easily embeddable cross-platform C library
+Version: @VERSION@
+URL: https://libcork.io/
+Libs: -L${libdir} -lcork
+Libs.private: @CMAKE_THREAD_LIBS_INIT@
+Cflags: -I${includedir}
