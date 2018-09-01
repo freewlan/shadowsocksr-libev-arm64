@@ -1353,13 +1353,18 @@ ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 }
 
 void
-enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc)
+enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc, void *iv)
 {
     sodium_memzero(ctx, sizeof(enc_ctx_t));
     cipher_context_init(env, &ctx->evp, enc);
 
     if (enc) {
-        rand_bytes(ctx->evp.iv, env->enc_iv_len);
+        if (iv) {
+            memcpy(ctx->evp.iv, iv, env->enc_iv_len);
+            ctx->init = 1;
+        }
+        else
+            rand_bytes(ctx->evp.iv, env->enc_iv_len);
     }
 }
 

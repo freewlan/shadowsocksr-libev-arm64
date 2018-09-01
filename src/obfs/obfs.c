@@ -11,6 +11,7 @@ int rand_bytes(uint8_t *output, int len);
 #include "verify.h"
 #include "auth.h"
 #include "auth_chain.h"
+#include "auth_akarin.h"
 
 #include "../utils.h"
 
@@ -265,6 +266,36 @@ obfs_class *new_obfs_class(const char *plugin_name) {
         plugin->client_post_decrypt = auth_chain_a_client_post_decrypt;
         plugin->client_udp_pre_encrypt = auth_chain_a_client_udp_pre_encrypt;
         plugin->client_udp_post_decrypt = auth_chain_a_client_udp_post_decrypt;
+
+        return plugin;
+    } else if (strcmp(plugin_name, "auth_akarin_rand") == 0) {
+        obfs_class *plugin = (obfs_class *) malloc(sizeof(obfs_class));
+        plugin->init_data = auth_akarin_rand_init_data;
+        plugin->new_obfs = auth_akarin_rand_new_obfs;
+        plugin->get_overhead = auth_akarin_rand_get_overhead;
+        plugin->get_server_info = get_server_info;
+        plugin->set_server_info = auth_akarin_rand_set_server_info;
+        plugin->dispose = auth_akarin_rand_dispose;
+
+        plugin->client_pre_encrypt = auth_akarin_rand_client_pre_encrypt;
+        plugin->client_post_decrypt = auth_akarin_rand_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = auth_akarin_rand_client_udp_pre_encrypt;
+        plugin->client_udp_post_decrypt = auth_akarin_rand_client_udp_post_decrypt;
+
+        return plugin;
+    } else if (strcmp(plugin_name, "auth_akarin_spec_a") == 0) {
+        obfs_class *plugin = (obfs_class *) malloc(sizeof(obfs_class));
+        plugin->init_data = auth_akarin_spec_a_init_data;
+        plugin->new_obfs = auth_akarin_spec_a_new_obfs;
+        plugin->get_overhead = auth_akarin_spec_a_get_overhead;
+        plugin->get_server_info = get_server_info;
+        plugin->set_server_info = auth_akarin_spec_a_set_server_info;
+        plugin->dispose = auth_akarin_spec_a_dispose;
+
+        plugin->client_pre_encrypt = auth_akarin_rand_client_pre_encrypt;
+        plugin->client_post_decrypt = auth_akarin_rand_client_post_decrypt;
+        plugin->client_udp_pre_encrypt = auth_akarin_rand_client_udp_pre_encrypt;
+        plugin->client_udp_post_decrypt = auth_akarin_rand_client_udp_post_decrypt;
 
         return plugin;
     }
