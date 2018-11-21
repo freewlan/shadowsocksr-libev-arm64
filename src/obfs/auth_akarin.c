@@ -2,11 +2,11 @@
 #include <time.h>
 #include <stdlib.h>
 #include <limits.h>
+#include "encrypt.h"
 #include "auth.h"
 #include "obfsutil.h"
 #include "crc32.h"
 #include "base64.h"
-#include "encrypt.h"
 #include "obfs.h"
 
 static const int auth_akarin_rand_init_loop = 0;
@@ -485,11 +485,11 @@ int auth_akarin_rand_pack_auth_data(auth_akarin_global_data *global, server_info
     }
     {
         enc_ctx_init(&local->cipher, local->cipher_server_ctx, 0, NULL);
-        struct buffer_t *plain = buffer_alloc(64);
-        memcpy(plain->buffer, local->last_server_hash, 8);
+        buffer_t *plain = buffer_alloc(64);
+        memcpy(plain->array, local->last_server_hash, 8);
         plain->len = 8;
         ss_decrypt(&local->cipher, plain, local->cipher_server_ctx, 8);
-        buffer_free(plain);
+        buffer_free(&plain);
     }
 
     out_size += auth_akarin_rand_pack_data(data, datalength, outdata + out_size, local, server);
