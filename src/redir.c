@@ -958,8 +958,8 @@ accept_cb(EV_P_ ev_io *w, int revents)
     if (server_env->cipher.enc_method > TABLE) {
         server->e_ctx = ss_malloc(sizeof(struct enc_ctx));
         server->d_ctx = ss_malloc(sizeof(struct enc_ctx));
-        enc_ctx_init(&server_env->cipher, server->e_ctx, 1);
-        enc_ctx_init(&server_env->cipher, server->d_ctx, 0);
+        enc_ctx_init(&server_env->cipher, server->e_ctx, 1, NULL);
+        enc_ctx_init(&server_env->cipher, server->d_ctx, 0, NULL);
     } else {
         server->e_ctx = NULL;
         server->d_ctx = NULL;
