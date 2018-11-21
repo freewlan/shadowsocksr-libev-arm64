@@ -280,6 +280,22 @@ bfree(buffer_t *ptr)
     }
 }
 
+buffer_t *
+buffer_alloc(size_t capacity)
+{
+    buffer_t *ptr = malloc(sizeof(buffer_t));
+    balloc(ptr, capacity);
+    return ptr;
+}
+
+void
+buffer_free(buffer_t **ptr)
+{
+    bfree(*ptr);
+    free(*ptr);
+    *ptr = NULL;
+}
+
 static int
 crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
                      const uint8_t *n, uint64_t ic, const uint8_t *k,
