@@ -7,6 +7,12 @@
 #include "obfsutil.h"
 #include "encrypt.h"
 
+
+// https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+
+
 typedef struct tls12_ticket_auth_global_data {
     uint8_t local_client_id[32];
 } tls12_ticket_auth_global_data;
@@ -365,3 +371,4 @@ tls12_ticket_auth_client_decode(obfs *self, char **pencryptdata, int datalength,
     return 0;
 }
 
+#pragma GCC diagnostic pop  // ignored "-Wstringop-truncation"

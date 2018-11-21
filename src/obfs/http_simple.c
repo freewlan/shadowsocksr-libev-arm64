@@ -6,6 +6,12 @@
 #include "http_simple.h"
 #include "obfsutil.h"
 
+
+// https://stackoverflow.com/questions/50198319/gcc-8-wstringop-truncation-what-is-the-good-practice
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+
+
 static char* g_useragent[] = {
     "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0",
     "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:40.0) Gecko/20100101 Firefox/44.0",
@@ -327,3 +333,6 @@ int http_post_client_encode(obfs *self, char **pencryptdata, int datalength, siz
     }
     return outlength;
 }
+
+#pragma GCC diagnostic pop  // ignored "-Wstringop-truncation"
+

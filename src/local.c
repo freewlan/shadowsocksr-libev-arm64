@@ -718,7 +718,10 @@ server_recv_cb(EV_P_ ev_io *w, int revents) {
 
                     ss_free(hostname);
                 } else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsizeof-pointer-memaccess"
                     strncpy(host, ip, sizeof(ip));
+#pragma GCC diagnostic pop
                 }
             }
 
