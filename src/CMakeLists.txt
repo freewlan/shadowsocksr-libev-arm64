@@ -26,6 +26,8 @@ set(SOURCE_FILES_OBFS
         obfs/base64.h
         obfs/auth_chain.c
         obfs/auth_chain.h
+        obfs/auth_akarin.c
+        obfs/auth_akarin.h
         obfs/auth.c
         obfs/auth.h)
 
