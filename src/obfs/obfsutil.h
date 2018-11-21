@@ -1,6 +1,10 @@
 #ifndef _OBFS_OBFSUTIL_H
 #define _OBFS_OBFSUTIL_H
 
+typedef struct shift128plus_ctx{
+    uint64_t v[2];
+}shift128plus_ctx;
+
 int get_head_size(char *plaindata, int size, int def_size);
 
 void init_shift128plus(void);
