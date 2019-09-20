@@ -132,7 +132,7 @@ section below.
 ``` bash
 cd shadowsocks-libev
 sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev \
-    gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc xmlto apg libpcre3-dev
+    gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc xmlto apg libpcre3-dev zlib1g-dev -y
 dpkg-buildpackage -b -us -uc -i
 cd ..
 sudo dpkg -i shadowsocks-libev*.deb
