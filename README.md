@@ -130,7 +130,7 @@ Otherwise, try to build and install directly from source. See the [Linux](#linux
 section below.
 
 ``` bash
-cd shadowsocks-libev
+cd shadowsocksr-libev
 sudo apt-get install --no-install-recommends build-essential autoconf libtool libssl-dev \
     gawk debhelper dh-systemd init-system-helpers pkg-config asciidoc xmlto apg libpcre3-dev zlib1g-dev -y
 dpkg-buildpackage -b -us -uc -i
@@ -150,6 +150,9 @@ sudo vim /etc/default/shadowsocks-libev
 # Start the service
 sudo /etc/init.d/shadowsocks-libev start    # for sysvinit, or
 sudo systemctl start shadowsocks-libev      # for systemd
+
+# Prevent the package be overwritten by the defacto shadowsocks-libev
+echo "shadowsocks-libev hold" | sudo dpkg --set-selections
 ```
 
 ### Fedora & RHEL
