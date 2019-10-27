@@ -15,7 +15,11 @@
  * Endianness
  */
 
+#if defined(__FreeBSD__)
+#include <machine/endian.h>
+#else
 #include <endian.h>
+#endif
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define CORK_CONFIG_IS_BIG_ENDIAN      1
