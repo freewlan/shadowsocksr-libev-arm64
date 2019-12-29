@@ -37,9 +37,13 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <limits.h>
+#if defined(__FreeBSD__)
+#include <net/if.h>
+#else
 #include <linux/if.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/netfilter_ipv6/ip6_tables.h>
+#endif
 
 #include <udns.h>
 #include <libcork/core.h>
@@ -73,6 +77,15 @@
 
 #include "includeobfs.h" // I don't want to modify makefile
 #include "jconf.h"
+
+#if defined(__FreeBSD__)
+#if !defined(SOL_IP)
+#define SOL_IP IPPROTO_IP
+#endif
+#if !defined(SOL_IPV6)
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
+#endif
 
 static void accept_cb(EV_P_ ev_io *w, int revents);
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
@@ -109,7 +122,11 @@ getdestaddr(int fd, struct sockaddr_storage *destaddr)
 
     error = getsockopt(fd, SOL_IPV6, IP6T_SO_ORIGINAL_DST, destaddr, &socklen);
     if (error) { // Didn't find a proper way to detect IP version.
+#if defined(__FreeBSD__)
+        error = getsockname(fd, (struct sockaddr *)destaddr, &socklen);
+#else
         error = getsockopt(fd, SOL_IP, SO_ORIGINAL_DST, destaddr, &socklen);
+#endif
         if (error) {
             return -1;
         }

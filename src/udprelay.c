@@ -81,6 +81,15 @@
 #define EWOULDBLOCK EAGAIN
 #endif
 
+#if defined(__FreeBSD__)
+#if !defined(SOL_IP)
+#define SOL_IP IPPROTO_IP
+#endif
+#if !defined(SOL_IPV6)
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
+#endif
+
 static void server_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_recv_cb(EV_P_ ev_io *w, int revents);
 static void remote_timeout_cb(EV_P_ ev_timer *watcher, int revents);
