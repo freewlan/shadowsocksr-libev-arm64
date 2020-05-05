@@ -10,11 +10,11 @@ cmake_minimum_required ( VERSION 2.8 )
 include_directories( ${CMAKE_CURRENT_BINARY_DIR} )
 
 set ( UDNS_SRC
-  udns_dn.c udns_dntosp.c udns_parse.c udns_resolver.c udns_init.c
-  udns_misc.c udns_XtoX.c
-  udns_rr_a.c udns_rr_ptr.c udns_rr_mx.c udns_rr_txt.c udns_bl.c
-  udns_rr_srv.c udns_rr_naptr.c udns_codes.c udns_jran.c
-)
+        udns_dn.c udns_dntosp.c udns_parse.c udns_resolver.c udns_init.c
+        udns_misc.c udns_XtoX.c
+        udns_rr_a.c udns_rr_ptr.c udns_rr_mx.c udns_rr_txt.c udns_bl.c
+        udns_rr_srv.c udns_rr_naptr.c udns_codes.c udns_jran.c
+        )
 
 if (WIN32)
     list ( APPEND UDNS_LIBS Ws2_32 )

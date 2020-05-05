@@ -90,7 +90,7 @@
 #   define EV_USE_NANOSLEEP 0
 # endif
 
-# if HAVE_SELECT //&& HAVE_SYS_SELECT_H
+# if HAVE_SELECT && HAVE_SYS_SELECT_H
 #  ifndef EV_USE_SELECT
 #   define EV_USE_SELECT EV_FEATURE_BACKENDS
 #  endif
@@ -2736,7 +2736,7 @@ ev_recommended_backends (void) EV_THROW
 {
   unsigned int flags = ev_supported_backends ();
 
-#if !defined(__NetBSD__) && !defined(__FreeBSD__)
+#ifndef __NetBSD__
   /* kqueue is borked on everything but netbsd apparently */
   /* it usually doesn't work correctly on anything but sockets and pipes */
   flags &= ~EVBACKEND_KQUEUE;

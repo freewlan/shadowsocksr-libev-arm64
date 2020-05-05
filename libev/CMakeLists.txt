@@ -6,19 +6,21 @@
 
 project ( libev C )
 cmake_minimum_required ( VERSION 2.8 )
-include ( cmake/dist.cmake )
+#include ( cmake/dist.cmake )
 #include ( configure )
+include ( configure.cmake )
+include ( dist.cmake )
 
 #configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h )
 include_directories( ${CMAKE_BINARY_DIR} )
 
-set ( EV_SRC 
-  ev.c
-  event.c
-)
+set ( EV_SRC
+        ev.c
+        event.c
+        )
 
 if (CYGWIN)
-  list ( APPEND EV_LIBS Ws2_32 )
+    list ( APPEND EV_LIBS Ws2_32 )
 endif ()
 
 add_library ( ev STATIC ${EV_SRC} )

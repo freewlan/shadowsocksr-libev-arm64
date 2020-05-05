@@ -205,7 +205,7 @@ int ss_decrypt(cipher_env_t* env, buffer_t *ciphertext, enc_ctx_t *ctx, size_t c
 
 int enc_init(cipher_env_t *env, const char *pass, const char *method);
 void enc_release(cipher_env_t *env);
-void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc);
+void enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc, void *iv);
 void enc_ctx_release(cipher_env_t* env, enc_ctx_t *ctx);
 int enc_get_iv_len(cipher_env_t* env);
 uint8_t* enc_get_key(cipher_env_t* env);
@@ -224,6 +224,8 @@ int ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_siz
 int balloc(buffer_t *ptr, size_t capacity);
 int brealloc(buffer_t *ptr, size_t len, size_t capacity);
 void bfree(buffer_t *ptr);
+buffer_t *buffer_alloc(size_t capacity);
+void buffer_free(buffer_t **ptr);
 
 //extern cipher_env_t cipher_env;
 

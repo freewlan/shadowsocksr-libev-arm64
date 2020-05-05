@@ -280,6 +280,22 @@ bfree(buffer_t *ptr)
     }
 }
 
+buffer_t *
+buffer_alloc(size_t capacity)
+{
+    buffer_t *ptr = malloc(sizeof(buffer_t));
+    balloc(ptr, capacity);
+    return ptr;
+}
+
+void
+buffer_free(buffer_t **ptr)
+{
+    bfree(*ptr);
+    free(*ptr);
+    *ptr = NULL;
+}
+
 static int
 crypto_stream_xor_ic(uint8_t *c, const uint8_t *m, uint64_t mlen,
                      const uint8_t *n, uint64_t ic, const uint8_t *k,
@@ -1353,13 +1369,18 @@ ss_decrypt_buffer(cipher_env_t *env, enc_ctx_t *ctx, char *in, size_t in_size, c
 }
 
 void
-enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc)
+enc_ctx_init(cipher_env_t *env, enc_ctx_t *ctx, int enc, void *iv)
 {
     sodium_memzero(ctx, sizeof(enc_ctx_t));
     cipher_context_init(env, &ctx->evp, enc);
 
     if (enc) {
-        rand_bytes(ctx->evp.iv, env->enc_iv_len);
+        if (iv) {
+            memcpy(ctx->evp.iv, iv, env->enc_iv_len);
+            ctx->init = 1;
+        }
+        else
+            rand_bytes(ctx->evp.iv, env->enc_iv_len);
     }
 }
 
